@@ -35,108 +35,75 @@ Because Splunk Enterprise was running on the MacBook Pro, the exported Windows e
 
 The second phase of the lab focused on Splunk investigation and detection. The XML event data was ingested into Splunk, and SPL queries were used to extract and analyze important authentication fields, including the target username, status code, substatus code, logon type, source IP address, timestamps, and number of failed logons.
 
-Finally, a detection search was created to identify five or more failed logon attempts against the same account within a five-minute period. The investigation demonstrated how a SOC analyst can use Windows authentication telemetry and Splunk to identify repeated authentication failures, examine the reason for the failures, and determine whether the activity requires further investigation.\
-\
+Finally, a detection search was created to identify five or more failed logon attempts against the same account within a five-minute period. The investigation demonstrated how a SOC analyst can use Windows authentication telemetry and Splunk to identify repeated authentication failures, examine the reason for the failures, and determine whether the activity requires further investigation.
+
 Step 1 — Verify Failed Logon Auditing
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 Inside the Windows 11 VM:
 
 I click Start. I type Local Security Policy, and I open Local Security Policy. (Image 1)
 
-### \
-\
 Step 1A — Navigate to Logon Auditing
 
-### I double-click Advanced Audit Policy Configuration and expanded. (Image 2)\
-\
-\
-\
+I double-click Advanced Audit Policy Configuration and expanded. (Image 2)
+
 Step 1B — Open the Audit Categories
 
 I click System Audit Policies – Local Group Policy Object and I expand it.
 
 I am looking for Logon/Logoff category, which controls auditing related to failed logons such as Event ID 4625. (Image 3)
 
-### \
-\
 Step 1C — Open Logon/Logoff
 
 I click Logon/Logoff once.The right side should display several audit subcategories. I am specifically looking for Audit Logon, because failed logon attempts recorded under this policy can generate Event ID 4625. (Image 4)
 
-### \
-\
 Step 1D — Enable Failed Logon Auditing
 
 I double-click Audit Logon. A Properties window will open, then I select the correct setting for recording Event ID 4625. (Image 5)
 
-### \
-\
 Step 1E — Enable Failure Auditing
 
 I check Configure the following audit events. Then I check Failure Because the objective is detecting unsuccessful authentication. Windows records failed logon attempts as Security Event ID 4625, so failure auditing is the telemetry I need. I leave Success unchecked for this lab, then I Click Apply, and OK (Image 6)
 
-\
-\
 Step 2 — Generate a Real Failed Authentication Attempt
-------------------------------------------------------
+
 
 Now I want Windows itself to produce Event ID 4625. I Close Local Security Policy. Then I lock the Window VM. At the Windows sign-in screen, I select my normal Windows account. I enter an incorrect password once and submit it. After Windows reports that the password is incorrect, I sign in normally with my correct password/PIN. I am going to make only one failed attempt. I want to prove that Windows generates the expected 4625 event before simulating repeated brute-force attempts. (Images 7 and 8)
-
-\
-\
-\
 
 Step 3 — Open Event Viewer (I need to verify that Windows recorded the failure as Event ID 4625).
 
 I click OK. I log in using my correct password. Once back on the desktop, I click Start. And I open Event Viewer. Windows Logs → Security → Event ID 4625\
-This is the place where the exercise changes from generating activity to SOC investigation.\
-\
+This is the place where the exercise changes from generating activity to SOC investigation.
 I locate the Failed Logon Event. I generated one incorrect password attempt earlier. Now I want to find the corresponding Event ID 4625. I open the Security Log.
------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 I click the small \> beside Windows Logs.
 
 And I click Security. (Images 9 and 10)
 
-\
-\
-\
-\
-\
 Step 3A — Filter for Event ID 4625
-----------------------------------
 
 On the right under Actions, I click Filter Current Log. A Filter Current Log window will open. (Image 11)
 
-\
-\
-\
 Step 3B — Filter for 4625
--------------------------
 
 There is a box that currently says: \<All Event IDs\>
 
 I click inside that box and put 4625 then OK.\
-\
+
 The filtered Security log shows multiple 4625 events, including one at 8:34:38 PM. The lower pane explicitly says: ”An account failed to log on.”
 
 So Now there is complete telemetry path: Failed Windows authentication → Security log → Event ID 4625
 
 The earlier events around 7:23–7:44 PM also show that Windows has recorded other failed authentication activity. (Image 12)
 
-\
-\
-\
 Step 4 — Analyze One 4625 Event
--------------------------------
+
 
 I am going to investigate the 8:34:38 PM event first because it is the newest one shown.
 
 I double-click the 8:34:38 PM — Event ID 4625 row. Then the Event Properties window will open. (Image 13)
 
-### \
-\
 Step 4A — Examine the failed-logon details
 
 In the General pane at the bottom,
@@ -173,11 +140,8 @@ Network Information
 
 These fields explain which account experienced the failure, why authentication failed, and where the attempt originated. (Images 14, 15, and 16)
 
-\
-\
-\
 Step 4B — Interpret Event ID 4625
----------------------------------
+
 
 The window shows Windows failed-logon event generated during the controlled test.
 
@@ -205,36 +169,27 @@ Therefore, Windows recorded the deliberately entered incorrect password exactly 
 
 So, a single Event 4625 does not establish brute force. Multiple 4625 events involving the same account within a short period create the pattern required for investigation.
 
-The images show multiple 4625 events, matching the controlled failed-password attempts.\
+The images show multiple 4625 events, matching the controlled failed-password attempts.
 I count the failed logons. There are 2 Event ID 4625 entries means Windows recorded 2 failed logon attempts.\
-\
+
 Step 5 — Generate a Clear Brute-Force Pattern
--------------------------------------------------------------------------------------------------------------
 
 Two failures demonstrate Event 4625, but a stronger lab pattern needs several consecutive failures.
 
 I lock the Windows again. I enter an incorrect password 5 times for Guscyrus. After the fifth failure, I enter the correct password and log back in. I open Event Viewer → Windows Logs → Security.I Kept the filter for Event ID 4625. And I click Refresh.\
-\
+
 Now, I done Five controlled failed logon attempts. That creates the repeated authentication pattern needed for the lab.
 
-\
 Step 5A — Verify the New 4625 Events
-------------------------------------
 
 I sign in with the correct password.
 
 I return to Event Viewer → Windows Logs → Security. I kept the 4625 filter active. And then I click Refresh.\
-\
+
 The important line now shows: Event ID: 4625 — Number of events: 13
 
 New events dated 9/23/2026 at 6:14 PM are visible. The five failed attempts generated new Windows Security events successfully. (Images 17 and 18)
 
-\
-\
--
-
-### \
-\
 Step 5B — Examine one new 4625 event
 
 I click the newest 4625 event at 6:14:39 PM. In the General tab, I scroll through the event information and I find:
@@ -261,23 +216,16 @@ I click the newest 4625 event at 6:14:39 PM. In the General tab, I scroll t
 
 > The remaining important fields are farther down inside the upper General box. (Image 19)
 
-### \
-\
-\
-\
 
 Step 5C — I scroll down inside the upper white event-description box.
 
 Then, Account for Which Logon Failed and Failure Information.\
-\
+
 Event ID: 4625\
-Logon Type: 2 — local interactive logon\
+Logon Type: 2 — local interactive logon
 Account Name: Guscyrus\
 Account Domain: WIN-AFBL2J2NDKS\
 Security ID: NULL SID (Image 20)
-
-### \
-\
 
 Step 5D — I scroll slightly farther down in the same upper box.
 
@@ -311,8 +259,6 @@ The failed authentication event now provides the key evidence:
 
 This confirms a genuine failed-password authentication event, exactly the telemetry needed for the brute-force detection lab. (Images 21)
 
-### \
-\
 Step 6 — Identify the repeated pattern
 
 In the filtered 4625 list, I examine the new events around 6:14 PM. I count the events generated by the five deliberate failed password attempts To verify that repeated authentication failures appear as multiple 4625 events close together in time.
@@ -326,7 +272,7 @@ The failed authentication occurred during an attempt to sign in directly at the
 
 Then look at the filtered Event ID 4625 list around 6:14 PM on 9/23/2026. And I count the New 4625 Events in order to determine how Windows recorded the five failed password attempts. It was 13 total Event ID 4625 records are currently present in the filtered Security log.
 
-### Step 7 — Isolate the Recent Failed Attempts
+Step 7 — Isolate the Recent Failed Attempts
 
 I look at the 4625 entries dated 9/23/2026 around 6:14 PM.
 
@@ -345,185 +291,144 @@ Time window: 24 seconds
 
 Such repeated failures create a basic brute-force detection pattern. Controlled lab activity explains the pattern; production SOC investigation would require validation before classification as malicious.
 
-## Step 8 — Moving to Splunk to Export the Windows 4625 events and then ingest the file
+Step 8 — Moving to Splunk to Export the Windows 4625 events and then ingest the file
 
 Next objective:
 
-### **Windows 4625 telemetry → Splunk → detection query → investigation\
-\
+Windows 4625 telemetry → Splunk → detection query → investigation
+
 I saved the file “**windows_4625_lab.evtx” on my macbook pro in order to ingest it by Splunk. (Image 22)\
-\
-**\**
-**\
-\**
+
 Step 9 — Create a shared folder
 
-First, on the **MacBook Pro**: I
+First, on the MacBook Pro: 
 
-1.  Create a normal folder on the Mac Desktop.
+1.  I Create a normal folder on the Mac Desktop and I Name the folder: Windows-Splunk-Transfer.
 
-2.  Name the folder: **Windows-Splunk-Transfer**
+Next, UTM can be configured to expose that folder to Windows. The exact UTM setting depends on the current VM configuration.
 
-Next, UTM can be configured to expose that folder to Windows. The exact UTM setting depends on the current VM configuration, so proceed **one step at a time**.
+I create Windows-Splunk-Transfer on the Mac Desktop first.
 
-I create **Windows-Splunk-Transfer** on the Mac Desktop first.
+After creation, report done.
 
-After creation, report **done**.
-
-### **\**
 Step 10 — Connect the Mac folder to the Windows VM
 
-On the **Mac menu bar**, with UTM active, I look for: **Virtual Machine → Shared Directory**
+On the Mac menu bar, with UTM active, I look for: Virtual Machine → Shared Directory
 
-or a **folder icon** in the UTM toolbar. (Images 23)
+or a folder icon in the UTM toolbar. (Images 23)
 
-**\**
 
-### Step 11 — Select the Mac shared folder
+Step 11 — Select the Mac shared folder
 
-I Move the cursor over **Shared Folder \>**. A submenu should open. I choose the option for **Select Shared Directory.** When the Mac Finder window opens, I select the **Windows-Splunk-Transfer** folder created on the Mac Desktop. Then I click **Open**.
+I Move the cursor over Shared Folder >. A submenu opens. I choose the option for Select Shared Directory. When the Mac Finder window opens, I select the Windows-Splunk-Transfer** folder created on the Mac Desktop. Then I click Open.
 
 ### Step 12 — Find the shared folder inside Windows
 
-In Windows: I open **File Explorer** — I click the yellow folder icon on the taskbar. Then I click **This PC** on the left. I look for the shared location. Common names include **Shared Folder**, **Network Location**, or a drive associated with UTM/SPICE. (Image 24)
+In Windows: I open File Explorer — I click the yellow folder icon on the taskbar. Then I click This PC on the left. I look for the shared location. Common names include Shared Folder, Network Location, or a drive associated with UTM/SPICE. (Image 24)
 
-### \
-\
-Step 13 — Then I return to Windows **File Explorer → Network Drive (Z:)** and I press **Refresh**. **Next step**
+Step 13 — Then I return to Windows File Explorer → Network Drive (Z:) and I press Refresh.
 
-I click **This PC**.I find **Network Drive (Z:)** and Double-click **Network Drive (Z:)**.
+I click This PC.I find Network Drive (Z:) and Double-click Network Drive (Z:).
 
-### I return to the **UTM menu at the very top-left** and I select: **Shared Folder**
+I return to the UTM menu at the very top-left** and I select: Shared Folder.
 
-**Shared Folder → Browse.**
+Shared Folder → Browse.
 
-I Select: **Desktop → Window-splunk-transfer**
+I Select: Desktop → Window-splunk-transfer
 
-Then I click **Open**. (Image 25)
+Then I click Open. (Image 25)
 
-\
-\
-Step 14 — Using my google drive account to download the file into my “window-splunk-transfer folder and I **upload the file “Window_4625_lab.evtx”.Then I transfer the file to “window-splunk-transfer” folder.**\
-\
-So, **Window-splunk-transfer contains the correct Event ID 4625 log file.** 
+Step 14 — Using my google drive account to download the file into my “window-splunk-transfer folder and I upload the file “Window_4625_lab.evtx”.Then I transfer the file to “window-splunk-transfer” folder.
 
-**Folder:** Window-splunk-transfer\
-**File:** Window_4625_lab.evtx\
-**Size:** about **70 KB**
+So, Window-splunk-transfer contains the correct Event ID 4625 log file.
 
-**Windows 11 → Security Event Log → Event ID 4625 → Window_4625_lab.evtx → Mac → Window-splunk-transfer**
+Folder: Window-splunk-transfer\
+File: Window_4625_lab.evtx\
+Size:about 70 KB
 
-### Step 15 —Using Splunk to ingest the file.\
-\
-**I open Add Data and I transfer the file into splunk. (Image 26)**
+Windows 11 → Security Event Log → Event ID 4625 → Window_4625_lab.evtx → Mac → Window-splunk-transfer
 
-\
-\
-The file **Window_4625_lab.evtx uploaded successfully**, But the problem is that
+ Step 15 —Using Splunk to ingest the file.
 
-Splunk is displaying binary data such as ElfFile, \x00, etc. Also, Splunk automatically selected: **Source type: preprocess-winevt**
+I open Add Data and I transfer the file into splunk. (Image 26)
 
-That means Splunk on my **Mac** is not currently parsing this raw .evtx upload into normal Windows Event Log records. Continuing this way could ingest essentially unreadable binary content rather than the Event ID 4625 fields we need.
 
-So, I have to convert the .evtx file on the Mac into a Splunk-friendly format such as **XML**, preserving the Windows event information, and then ingest that into Splunk.
+The file Window_4625_lab.evtx uploaded successfully, But the problem is that
 
-This is actually useful SOC practice: **Windows EVTX → parsed event data → SIEM ingestion → SPL detection**.
+Splunk is displaying binary data such as ElfFile, \x00, etc. Also, Splunk automatically selected: Source type: preprocess-winevt
 
-I used **Mac Terminal** and I convert that evtx format to XML format. The conversion completed to **Window_4625_lab.xml (Image 27)**
+That means Splunk on my Mac is not currently parsing this raw .evtx upload into normal Windows Event Log records. Continuing this way could ingest essentially unreadable binary content rather than the Event ID 4625 fields we need.
 
-### On Splunk, I go to **Settings → Add Data → Upload**, I select Window_4625_lab.xml.\
-(Images 28, 29, and 30)\
-\
-\
-\
-\
-\
-\
+So, I have to convert the .evtx file on the Mac into a Splunk-friendly format such as XML, preserving the Windows event information, and then ingest that into Splunk.
+
+This is actually useful SOC practice: Windows EVTX → parsed event data → SIEM ingestion → SPL detection.
+
+I used Mac Terminal and I convert that evtx format to XML format. The conversion completed to Window_4625_lab.xml (Image 27)
+
+ On Splunk, I go to Settings → Add Data → Upload, I select Window_4625_lab.xml.
+(Images 28, 29, and 30)
+
 Step 16 — create XLM source type 
 
-\
-\
-**Name:** windows_security_xml
+Name: windows_security_xml
 
-**Description:** Windows Security Event Log XML for Event ID 4625 analysis\
-\
-**Category:** Custom\
-**App:** Search & Reporting
+Description: Windows Security Event Log XML for Event ID 4625 analysis\
 
-The I **Save**.\
-\
-**Source type: windows_security_xml**\
-\
-Splunk is showing the individual Windows events separately, including records **13 and 14**, rather than treating the entire XML file as one event.
+Category: Custom\
+App: Search & Reporting
 
-I click the green **Next \>** button at the top. That will take to **Input Settings**.
+The I Save.
 
-### \
-\
-In **Host field value**, I replace: MacBookPro
+Source type: windows_security_xml
+
+Splunk is showing the individual Windows events separately, including records 13 and 14, rather than treating the entire XML file as one event.
+
+I click the green Next \> button at the top. That will take to Input Settings.
+
+
+In Host field value, I replace: MacBookPro
 
 with: Windows11-VM
 
-I leave **Constant value** and I selected and leave **Index = Default** unchanged. Then I click review.\
-**Host:** Windows11-VM\
-**Host method:** Constant value\
-**Index:** Default
+I leave Constant value and I selected and leave Index = Default unchanged. Then I click review.\
+Host: Windows11-VM\
+Host method: Constant value\
+Index: Default
 
-\
-\
-The **Review** page confirms the important settings are correct:
+The Review page confirms the important settings are correct:
 
-**Input Type:** Uploaded File\
-**File:** Window_4625_lab.xml\
-**Source Type:** windows_security_xml\
-**Host:** Windows11-VM\
-**Index:** Default
-
+Input Type: Uploaded File
+File: Window_4625_lab.xml
+Source Type: windows_security_xml
+Host: Windows11-VM\
+Index: Default
 Then I click the **Submit.**
 
 This is the point where Splunk will actually index the Windows security events.
 
-\
-\
-\
-\
-\
-\
-\
-\
 The images show Splunk returned **14 events** for:
 
 source="Window_4625_lab.xml" host="Windows11-VM" sourcetype="windows_security_xml"
 
-There is one important detail: I previously confirmed the XML contains **13 occurrences of Event ID 4625**, but Splunk currently shows **14 events**. The first result appears to contain the XML declaration/header plus the beginning of the first \<Event\>, so it should **not assumed all 14 Splunk events are 4625 events** yet. (Images 31, 32, 33, 34, 35, 36, and 37)
+There is one important detail: I previously confirmed the XML contains 13 occurrences of Event ID 4625, but Splunk currently shows **14 events**. The first result appears to contain the XML declaration/header plus the beginning of the first \<Event\>, so it should not assumed all 14 Splunk events are 4625 events yet. (Images 31, 32, 33, 34, 35, 36, and 37)
 
 Step 17-verify Event ID 4625\
-\
+
 I go back to the search bar and replace the current search with:
 
 source="Window_4625_lab.xml" host="Windows11-VM" sourcetype="windows_security_xml" "\<EventID\>4625\</EventID\>"
 
-I keep **Time range = All time**, then I click the green **Search**
+I keep Time range = All time, then I click the green Search
 
-The purpose is simple: **ask Splunk to return only records containing Windows Event ID 4625**.
+The purpose is To ask Splunk to return only records containing Windows Event ID 4625.
 
-### 
+ So there is verification that Splunk successfully contains 13 Windows failed-logon events (Event ID 4625) from the Windows 11 VM.
 
-\
-\
-\
-\
-\
-\
-\
-\
-So there is verification that Splunk successfully contains **13 Windows failed-logon events (Event ID 4625)** from the Windows 11 VM.
+The ingestion portion of the lab is complete. Now I can begin the actual SOC authentication investigation. (Images 38, 39, 40, and 41)
 
-The ingestion portion of the lab is complete. Now I can begin the actual **SOC authentication investigation**. (Images 38, 39, 40, and 41)
+Step 18- extract the username
 
-**Step 18- extract the username**
-
-A Tier-1 analyst needs to determine **which account experienced the failed logons**.
+A Tier-1 analyst needs to determine which account experienced the failed logons.
 
 In the search bar, I keep the existing search and I just add:
 
@@ -531,12 +436,10 @@ In the search bar, I keep the existing search and I just add:
 
 \| table \_time TargetUserName
 
-### And I run it.\
-\
-\
-\
-Splunk extracted TargetUserName, and the results show that the failed logons are associated with **Guscyrus**. I also notice **one of the 13 rows has a blank TargetUserName**. I can investigate that separately rather than assuming what it represents. (Image 42)\
-\
+ And I run it.\
+
+Splunk extracted TargetUserName, and the results show that the failed logons are associated with **Guscyrus**. I also notice one of the 13 rows has a blank TargetUserName. I can investigate that separately rather than assuming what it represents. (Image 42)\
+
 Step 19— count failed logons by username
 
 I replace only the last line:
@@ -547,21 +450,18 @@ with:
 
 \| stats count AS Failed_Logons by TargetUserName\
 \
-This is an important SOC step because instead of examining individual 4625 events, I am now **aggregating failed authentication attempts by account**.\
+This is an important SOC step because instead of examining individual 4625 events, I am now aggregating failed authentication attempts by account.
 \
 The result establishes:
 
-**\
 12 total Event ID 4625 events** were returned by the base search.
 
-**12 events** have TargetUserName = Guscyrus.\
-**\
+12 events have TargetUserName = Guscyrus.\
+
 1 event** did not produce a TargetUserName with the extraction, which explains why stats ... by TargetUserName shows 12 rather than 13.
 
 That distinction is useful in SOC work—I should investigate the missing event rather than silently ignore it. (Image 43)
 
-### \
-\
 Step 20— identify the event with the missing username
 
 I change the last line to:
@@ -572,51 +472,43 @@ I change the last line to:
 
 So keep the existing rex extraction and I replace the stats line with those two lines.
 
-Then will determine **why that 13th Event ID 4625 record has no extracted username**.\
-\
-that should be :\
-\
+Then will determine why that 13th Event ID 4625 record has no extracted username.
+
+that should be :
 source="Window_4625_lab.xml" host="Windows11-VM" sourcetype="windows_security_xml" "\<EventID\>4625\</EventID\>"
 
 \| rex field=\_raw "\<Data Name=\\TargetUserName\\\>(?\<TargetUserName\>\[^\<\]+)"\
 \| where isnull(TargetUserName)\
 \| table \_time \_raw\
 \
-The screenshot confirms exactly **1 event** remains after:
+The screenshot confirms exactly 1 event remains after:
 
 \| where isnull(TargetUserName)
 
 Its Splunk timestamp is:
 
-**2026-09-24 20:52:17**
-
+2026-09-24 20:52:17
 So the accounting is now:
 
-**13 total 4625 events = 12 with TargetUserName=Guscyrus + 1 event where our extraction did not find TargetUserName.**
+13 total 4625 events = 12 with TargetUserName=Guscyrus + 1 event where our extraction did not find TargetUserName.
 
-### \
-\
+I click “View events”. That take it to the full event view for this single 4625 event at 20:52:17.
 
-I click **“View events”**. That take it to the full event view for this single **4625** event at **20:52:17**.
+The 13th 4625 event is incomplete. Notice:
 
-The **13th 4625 event is incomplete**. Notice:
+The other 12 events contained about 48 XML lines, including \<EventData\> and TargetUserName.
 
-The other 12 events contained about **48 XML lines**, including \<EventData\> and TargetUserName.
-
-This event shows only **12 lines**.
+This event shows only 12 lines.
 
 It stops after \<Keywords\>...\</Keywords\>.
 
-Therefore, there is **no TargetUserName field in this imported record** for Splunk to extract.
+Therefore, there is no TargetUserName field in this imported record for Splunk to extract.
 
-So this does **not mean the 13th attempt used a blank username**. It means the XML for this particular event was truncated/incomplete in the file Splunk received.
+So this does not mean the 13th attempt used a blank username. It means the XML for this particular event was truncated/incomplete in the file Splunk received.
 
-That explains the earlier result perfectly: **13 Event ID 4625 records total, but only 12 contain an extractable username (Guscyrus). (Images 44, 45, and 46)\
-\**
-**\
-\**
+That explains the earlier result perfectly: 13 Event ID 4625 records total, but only 12 contain an extractable username (Guscyrus). (Images 44, 45, and 46)
 
-### Step 21— extract the important authentication fields
+Step 21— extract the important authentication fields
 
 I replace the current Splunk search with this:
 
@@ -634,24 +526,19 @@ source="Window_4625_lab.xml" host="Windows11-VM" sourcetype="windows_security_xm
 
 \| table \_time TargetUserName Status SubStatus LogonType IpAddress
 
-This should give a clean SOC table showing **who failed, why the logon failed, what type of logon occurred, and where it came from**.
+This should give a clean SOC table showing who failed, why the logon failed, what type of logon occurred, and where it came from.
 
-From the images, **12 complete Event ID 4625 records** show:
+From the images, 12 complete Event ID 4625 records show:
 
 TargetUserName = GusCyrus\
 Status = 0xC000006D → logon failure / bad credentials\
-SubStatus = 0xC000006A → **incorrect password**\
-LogonType = 2 → **Interactive logon**\
+SubStatus = 0xC000006A → incorrect password
+LogonType = 2 → Interactive logon
 Most show IpAddress = 127.0.0.1; a couple show -
 
 The 13th record at 2026-09-24 20:52:17 is the incomplete XML event we already identified.
-
 .(Images 47 and 48)
 
-### \
-\
-\
-\
 Step 22— summarize the failed-logon pattern
 
 Now let's make Splunk calculate the failures by username, status, and source.
@@ -664,11 +551,11 @@ I replace the last \| table ... line with:
 
 I keep all the rex lines above it exactly as they are.
 
-Splunk found **12 complete failed-logon events** for Guscyrus:
+Splunk found 12 complete failed-logon events for Guscyrus:
 
-- **10 failures** have IpAddress = 127.0.0.1
+- 10 failures have IpAddress = 127.0.0.1
 
-- **2 failures** have IpAddress = -
+- 2 failures** have IpAddress = -
 
 - All have Status = 0xC000006D
 
@@ -678,30 +565,25 @@ Splunk found **12 complete failed-logon events** for Guscyrus:
 
 So Splunk has now successfully transformed the raw Windows XML into meaningful authentication evidence. (Image 49)
 
-### \
-\
 Step 23— detect repeated failures
 
-Now I apply a simple SOC threshold: **5 or more failed logons**.
+Now I apply a simple SOC threshold: 5 or more failed logons.
 
-I add this **one line at the very bottom** of the existing search:
+I add this one line at the very bottom of the existing search:
 
 \| where Failed_Logons \>= 5
 
-The **2-event group with IpAddress = - disappeared** because it did not meet Failed_Logons \>= 5. Splunk retained the group with:
+The 2-event group with IpAddress = - disappeared because it did not meet Failed_Logons \>= 5. Splunk retained the group with:
 
-**Guscyrus → 10 failed logons → incorrect password (0xC000006A) → Logon Type 2 → 127.0.0.1**
+Guscyrus → 10 failed logons → incorrect password (0xC000006A) → Logon Type 2 → 127.0.0.1
 
-One important SOC point: this threshold detects **repeated authentication failures**, but by itself it does **not prove a brute-force attack**. Context and timing matter.
-
-### \
-\
+One important SOC point: this threshold detects repeated authentication failures, but by itself it does not prove a brute-force attack. Context and timing matter.
 
 I move line 8:
 
 \| convert ctime(First_Attempt) ctime(Last_Attempt)
 
-to **after** the where line.
+to after the where line.
 
 The final four lines should be exactly:
 
@@ -713,32 +595,29 @@ The final four lines should be exactly:
 
 \| convert ctime(First_Attempt) ctime(Last_Attempt)
 
-- **Target account:** Guscyrus
+- Target account: Guscyrus
 
-- **Failed logons:** 10
+- Failed logons: 10
 
-- **Logon Type:** 2 = Interactive logon
+- Logon Type: 2 = Interactive logon
 
-- **IP address:** 127.0.0.1 = local Windows machine/loopback
+- IP address: 127.0.0.1 = local Windows machine/loopback
 
-- **Status:** 0xc000006d = logon failure
+- Status: 0xc000006d = logon failure
 
-- **SubStatus:** 0xc000006a = incorrect password
+- SubStatus: 0xc000006a = incorrect password
 
-- **First attempt:** 09/22/2026 22:23:00
+- First attempt: 09/22/2026 22:23:00
 
-- **Last attempt:** 09/23/2026 21:14:34
+- Last attempt: 09/23/2026 21:14:34
 
-- **Duration:** about 82,294 seconds
+- Duration: about 82,294 seconds
 
-This is good SOC evidence: **10 failed interactive logons for the same account associated with an incorrect password**, meeting \>=5 detection threshold. ( Images 50 and 51)
+This is good SOC evidence: 10 failed interactive logons for the same account associated with an incorrect password, meeting \>=5 detection threshold. ( Images 50 and 51)
 
-\
-\
 Incident Response Report
-========================
 
-## Windows Failed Logon / Brute-Force Detection — Event ID 4625
+Windows Failed Logon / Brute-Force Detection — Event ID 4625
 
 **Incident Type:** Repeated Failed Authentication Attempts\
 **Data Source:** Windows Security Event Log\
@@ -749,7 +628,7 @@ Incident Response Report
 **Incident Status:** Closed — Authorized Lab Activity\
 **Severity:** Low / Informational in lab context
 
-### 1. Executive Summary
+1. Executive Summary
 
 Repeated Windows authentication failures were identified during analysis of Windows Security Event ID 4625 data. Splunk detected **five failed logon attempts against the Guscyrus account within a five-minute period**, satisfying the detection threshold configured for potential brute-force activity.
 
@@ -757,13 +636,13 @@ Investigation showed that the attempts used **Logon Type 2**, representing an in
 
 The activity was generated intentionally in an authorized Windows 11 lab environment. No evidence from the collected dataset indicated remote access, account compromise, or successful unauthorized authentication.
 
-### 2. Incident Detection
+2. Incident Detection
 
 Windows 11 generated Security Event ID **4625** following intentionally incorrect password attempts. The events were exported from Windows Event Viewer and transferred to the MacBook Pro used for analysis.
 
 The Windows event data was converted from EVTX to XML and ingested into Splunk. An SPL detection search grouped authentication failures into five-minute intervals and identified accounts with at least five failed authentication attempts.
 
-**Detection condition:**
+Detection condition:
 
 Event ID 4625
 
@@ -781,7 +660,7 @@ Within 5 minutes
 
 The configured condition produced a detection for the Guscyrus account.
 
-### 3. Evidence Collected
+ 3. Evidence Collected
 
 | **Evidence**     | **Observed Value**   |
 |------------------|----------------------|
@@ -796,8 +675,7 @@ The configured condition produced a detection for the Guscyrus account.
 | Data Source      | Windows Security Log |
 | Analysis Tool    | Splunk               |
 
-### \
-\
+
 4. Technical Analysis
 
 **Event ID 4625** indicates that Windows recorded an unsuccessful account logon.
@@ -810,7 +688,7 @@ Status: 0xc000006d
 
 SubStatus: 0xc000006a
 
-The status indicates an authentication failure, while the substatus indicates an **incorrect password for the specified account**.
+The status indicates an authentication failure, while the substatus indicates an incorrect password for the specified account.
 
 The source address was:
 
@@ -818,7 +696,7 @@ The source address was:
 
 This is the IPv4 loopback address and supports the conclusion that the observed activity was local to the system rather than originating from an external network host.
 
-### 5. Splunk Detection Logic
+ 5. Splunk Detection Logic
 
 The investigation used SPL to extract relevant Windows authentication fields and identify repeated failures:
 
@@ -840,9 +718,9 @@ source="Window_4625_lab.xml" host="Windows11-VM" sourcetype="windows_security_xm
 
 \| where Failed_Logons \>= 5
 
-The search returned a result containing **five failed authentication events**, demonstrating that the configured detection threshold was met.
+The search returned a result containing five failed authentication events, demonstrating that the configured detection threshold was met.
 
-### 6. Analyst Assessment
+6. Analyst Assessment
 
 **Classification:** Potential brute-force pattern / Authorized Lab Activity
 
@@ -850,19 +728,19 @@ The search returned a result containing **five failed authentication events**, d
 
 The telemetry establishes that multiple incorrect-password authentication attempts occurred against the same account within the configured detection window.
 
-However, **five failed authentication attempts alone do not establish malicious intent**. In a production SOC environment, additional investigation would be required before classifying the activity as an actual brute-force attack.
+However, five failed authentication attempts alone do not establish malicious intent. In a production SOC environment, additional investigation would be required before classifying the activity as an actual brute-force attack.
 
 Relevant additional evidence would include authentication history, source system information, successful logons following the failures, endpoint telemetry, account changes, user activity, network connections, and threat-intelligence information.
 
-For this lab, the activity was intentionally generated and therefore classified as **authorized simulated activity rather than a security compromise**.
+For this lab, the activity was intentionally generated and therefore classified as authorized simulated activity rather than a security compromise.
 
-### 7. Containment and Remediation
+ 7. Containment and Remediation
 
 No containment or remediation action was required because the activity occurred in an authorized lab environment.
 
 In a production environment, suspicious repeated authentication failures could require additional actions such as reviewing the affected account, investigating the originating endpoint or IP address, examining subsequent successful authentication, validating activity with the account owner, and escalating confirmed malicious activity according to the organization's incident-response procedure.
 
-### 8. Final Disposition
+8. Final Disposition
 
 **Final Status:** Closed — Authorized Lab Activity
 
