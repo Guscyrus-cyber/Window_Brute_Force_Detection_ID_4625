@@ -322,7 +322,7 @@ Step 11 — Select the Mac shared folder
 
 I Move the cursor over Shared Folder >. A submenu opens. I choose the option for Select Shared Directory. When the Mac Finder window opens, I select the Windows-Splunk-Transfer** folder created on the Mac Desktop. Then I click Open.
 
-### Step 12 — Find the shared folder inside Windows
+Step 12 — Find the shared folder inside Windows
 
 In Windows: I open File Explorer — I click the yellow folder icon on the taskbar. Then I click This PC on the left. I look for the shared location. Common names include Shared Folder, Network Location, or a drive associated with UTM/SPICE. (Image 24)
 
